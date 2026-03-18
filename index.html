@@ -1107,6 +1107,20 @@
     };
 
     // =============================
+    // テスト関数（開発用）
+    // =============================
+    function testFormValues() {
+      console.log('=== フォーム値テスト ===');
+      console.log('氏名:', document.getElementById('input-name').value);
+      console.log('メール:', document.getElementById('input-email').value);
+      console.log('電話:', document.getElementById('input-phone').value);
+      console.log('大学:', document.getElementById('input-university').value);
+      console.log('卒業予定年:', document.getElementById('input-graduation').value);
+      console.log('希望勤務地:', document.getElementById('input-location').value);
+      console.log('同意:', document.getElementById('input-consent').checked);
+    }
+
+    // =============================
     // 結果データ
     // =============================
     function getResultData(type) {
@@ -1435,15 +1449,20 @@
     }
 
     async function submitUserInfo() {
+      console.log('submitUserInfo() が呼ばれました');
+      
       const name = document.getElementById('input-name').value.trim();
       const email = document.getElementById('input-email').value.trim();
       const phone = document.getElementById('input-phone').value.trim();
       const university = document.getElementById('input-university').value.trim();
-      const graduation = document.getElementById('input-graduation').value.trim();
-      const location = document.getElementById('input-location').value.trim();
+      const graduation = document.getElementById('input-graduation').value;
+      const location = document.getElementById('input-location').value;
       const consent = document.getElementById('input-consent').checked;
 
+      console.log('取得した値:', { name, email, phone, university, graduation, location, consent });
+
       if (!name || !email || !phone || !graduation || !consent) {
+        console.log('バリデーションエラー');
         alert('必須項目を入力してください');
         return;
       }
@@ -1455,6 +1474,9 @@
         mbtiType: selectedMBTI,
         timestamp: new Date().toISOString()
       };
+
+      // デバッグ用（開発時のみ）
+      console.log('送信するユーザーデータ:', userData);
 
       // 診断結果計算
       calculateResult();
@@ -1668,6 +1690,9 @@
         q9: answers[8] || ''
       };
 
+      // デバッグ用（開発時のみ）
+      console.log('スプレッドシートに送信するデータ:', data);
+
       try {
         await fetch(GAS_URL, {
           method: 'POST',
@@ -1675,6 +1700,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
+        console.log('データ送信完了');
       } catch (err) {
         console.error('保存エラー:', err);
       }

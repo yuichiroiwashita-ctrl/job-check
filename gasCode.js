@@ -6,7 +6,15 @@ const SPREADSHEET_ID = '18Gw7OkEHVQ2YFFAv-5pc8cWWiFeBrZZ3Onk-dbXQ1WM';
 function doPost(e) {
   try {
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getActiveSheet();
+    
+    // リクエストの内容をログに記録
+    Logger.log('受信したリクエスト: ' + JSON.stringify(e));
+    
     const data = JSON.parse(e.postData.contents);
+    
+    // 受信したデータをログに記録
+    Logger.log('パースしたデータ: ' + JSON.stringify(data));
+    Logger.log('卒業予定年: ' + data.graduation);
     
     // ヘッダーが存在しない場合は作成
     if (sheet.getLastRow() === 0) {
@@ -36,7 +44,7 @@ function doPost(e) {
     }
     
     // データ行を追加
-    sheet.appendRow([
+    const rowData = [
       new Date(),
       data.lineUserId || '',
       data.lineDisplayName || '',
@@ -58,7 +66,13 @@ function doPost(e) {
       data.q8 || '',
       data.q9 || '',
       data.timestamp || new Date().toISOString()
-    ]);
+    ];
+    
+    Logger.log('保存する行データ: ' + JSON.stringify(rowData));
+    
+    sheet.appendRow(rowData);
+    
+    Logger.log('データ保存成功');
     
     return ContentService.createTextOutput(JSON.stringify({
       status: 'success',
@@ -66,6 +80,7 @@ function doPost(e) {
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
+    Logger.log('エラー発生: ' + error.toString());
     return ContentService.createTextOutput(JSON.stringify({
       status: 'error',
       message: error.toString()
