@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>適職診断 - あなたにぴったりの仕事を見つけよう</title>
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- LIFF SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --primary: #6366F1;
+      --primary-dark: #4F46E5;
+      --secondary: #06D6A0;
+      --type-color1: #6366F1;
+      --type-color2: #8B5CF6;
+      --type-light: #EEF2FF;
+      --type-text: #4338CA;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: #F9FAFB;
+      color: #1F2937;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .screen {
+      min-height: 100vh;
+      display: none;
+      flex-direction: column;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    /* =========================
+       スタート画面
+       ========================= */
+    #screen-start {
+      background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+      color: white;
+      text-align: center;
+      padding: 40px 20px;
+      justify-content: center;
+    }
+
+    .hero-title {
+      font-size: 32px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .hero-subtitle {
+      font-size: 15px;
+      opacity: 0.9;
+      margin-bottom: 40px;
+    }
+
+    .hero-emoji {
+      font-size: 80px;
+      margin: 20px 0;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-15px); }
+    }
+
+    .btn-primary {
+      display: inline-block;
+      padding: 18px 50px;
+      background: white;
+      color: #667EEA;
+      font-size: 18px;
+      font-weight: 700;
+      border-radius: 50px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      transition: all 0.3s;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.96);
+    }
+
+    /* =========================
+       共通コンテナ
+       ========================= */
+    .container {
+      flex: 1;
+      padding: 20px;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1F2937;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: #6B7280;
+    }
+
+    /* プログレスバー */
+    .progress-bar {
+      height: 6px;
+      background: #E5E7EB;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+
+    /* =========================
+       MBTIカード選択
+       ========================= */
+    .mbti-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .mbti-card {
+      aspect-ratio: 1;
+      background: white;
+      border: 2px solid #E5E7EB;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      padding: 8px;
+    }
+
+    .mbti-card:active {
+      transform: scale(0.95);
+    }
+
+    .mbti-card.selected {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .mbti-type {
+      font-size: 18px;
+      font-weight: 900;
+      color: #1F2937;
+      margin-bottom: 4px;
+    }
+
+    .mbti-desc {
+      font-size: 9px;
+      color: #6B7280;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    /* =========================
+       質問カード
+       ========================= */
+    .question-card {
+      background: white;
+      border-radius: 24px;
+      padding: 28px 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+
+    .question-number {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+
+    .question-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1F2937;
+      line-height: 1.5;
+    }
+
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .option-card {
+      background: #F9FAFB;
+      border: 2px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 18px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .option-card:active {
+      transform: scale(0.98);
+    }
+
+    .option-card.selected {
+      border-color: var(--primary);
+      background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+    }
+
+    .option-radio {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #D1D5DB;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .option-card.selected .option-radio {
+      border-color: var(--primary);
+      background: var(--primary);
+    }
+
+    .option-card.selected .option-radio::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .option-text {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 600;
+      color: #374151;
+      line-height: 1.4;
+    }
+
+    .btn-next {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+      transition: all 0.2s;
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+
+    .btn-next:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-next:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn-back {
+      width: 100%;
+      padding: 16px;
+      background: white;
+      color: #6B7280;
+      border: 2px solid #E5E7EB;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Noto Sans JP', sans-serif;
+      margin-top: 12px;
+    }
+
+    .btn-back:active {
+      background: #F9FAFB;
+      transform: scale(0.98);
+    }
+
+    /* =========================
+       ユーザー情報フォーム
+       ========================= */
+    .form-card {
+      background: white;
+      border-radius: 24px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+
+    .form-label .required {
+      color: #EF4444;
+      margin-left: 4px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #E5E7EB;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: 'Noto Sans JP', sans-serif;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-input::placeholder {
+      color: #9CA3AF;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: start;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #4B5563;
+      line-height: 1.5;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      cursor: pointer;
+      margin-top: 2px;
+    }
+
+    /* =========================
+       ローディング画面
+       ========================= */
+    #screen-loading {
+      background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+      color: white;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 80px;
+      height: 80px;
+      border: 6px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 24px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    /* ==============================
+       結果画面 - ポップスタイルB
+       ============================== */
+
+    /* ヒーローヘッダー */
+    .result-hero {
+      position: relative;
+      overflow: hidden;
+      padding: 48px 24px 40px;
+      text-align: center;
+      color: white;
+      background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    }
+
+    .hero-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      animation: float 6s ease-in-out infinite;
+    }
+    .hero-circle-1 {
+      width: 200px; 
+      height: 200px;
+      top: -80px; 
+      right: -60px;
+      animation-delay: 0s;
+    }
+    .hero-circle-2 {
+      width: 150px; 
+      height: 150px;
+      bottom: -60px; 
+      left: -40px;
+      animation-delay: 2s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-15px) rotate(5deg); }
+    }
+
+    /* タイプアイコン */
+    .result-icon-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100px;
+      height: 100px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 50%;
+      margin-bottom: 16px;
+      border: 3px solid rgba(255,255,255,0.4);
+      animation: iconBounce 0.8s cubic-bezier(0.36,0.07,0.19,0.97) both;
+    }
+
+    @keyframes iconBounce {
+      0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+      60% { transform: scale(1.15) rotate(10deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .result-icon-emoji {
+      font-size: 52px;
+      line-height: 1;
+    }
+
+    /* タイプ名テキスト */
+    .result-label-top {
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0.85;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .result-type-name {
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      animation: slideUp 0.6s ease both 0.2s;
+    }
+
+    .result-catch {
+      font-size: 14px;
+      opacity: 0.9;
+      line-height: 1.6;
+      max-width: 280px;
+      margin: 0 auto 16px;
+      animation: slideUp 0.6s ease both 0.35s;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* MBTIバッジ */
+    .result-mbti-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.25);
+      border: 2px solid rgba(255,255,255,0.5);
+      border-radius: 999px;
+      padding: 5px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      backdrop-filter: blur(5px);
+    }
+
+    /* コンテンツエリア */
+    .result-content {
+      padding: 20px 16px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* カード共通 */
+    .result-card {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+      animation: slideUp 0.5s ease both;
+    }
+
+    .result-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .result-card-icon {
+      font-size: 20px;
+    }
+
+    .result-card-header h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1F2937;
+    }
+
+    /* レーダーチャート */
+    .radar-wrap {
+      position: relative;
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto;
+      aspect-ratio: 1;
+    }
+
+    /* 強みバッジ */
+    .strengths-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .strength-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--type-light);
+      color: var(--type-text);
+      border: 2px solid var(--type-color1);
+      animation: badgePop 0.4s cubic-bezier(0.36,0.07,0.19,0.97) both;
+    }
+
+    @keyframes badgePop {
+      0% { transform: scale(0); opacity: 0; }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* 職種タグ */
+    .jobs-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .job-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: #F8FAFC;
+      border: 2px solid #E2E8F0;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+    }
+
+    .job-tag::before {
+      content: '✓';
+      color: var(--type-color1, #6366F1);
+      font-weight: 900;
+    }
+
+    /* 企業カード */
+    .companies-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .company-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      background: #FAFAFA;
+      border: 2px solid #F1F5F9;
+      border-radius: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .company-card::before {
+      content: '';
+      position: absolute;
+      left: 0; 
+      top: 0; 
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(180deg, var(--type-color1, #6366F1), var(--type-color2, #8B5CF6));
+      border-radius: 4px 0 0 4px;
+    }
+
+    .company-card:active {
+      transform: scale(0.98);
+      background: #F1F5F9;
+    }
+
+    .company-logo {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+      background: var(--type-light, #EEF2FF);
+    }
+
+    .company-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .company-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1F2937;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .company-industry-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--type-light, #EEF2FF);
+      color: var(--type-text, #4338CA);
+      margin: 3px 0;
+    }
+
+    .company-comment {
+      font-size: 12px;
+      color: #6B7280;
+      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .company-arrow {
+      font-size: 18px;
+      color: #9CA3AF;
+      flex-shrink: 0;
+    }
+
+    /* CTA エリア */
+    .result-cta-area {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .cta-line-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #06C755, #00B900);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 17px;
+      font-weight: 800;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(6, 199, 85, 0.35);
+      transition: all 0.2s;
+      letter-spacing: -0.01em;
+    }
+
+    .cta-line-btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 10px rgba(6, 199, 85, 0.25);
+    }
+
+    .line-icon { 
+      font-size: 20px; 
+    }
+
+    .sub-cta-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .cta-share-btn, .cta-restart-btn {
+      flex: 1;
+      padding: 14px;
+      border: 2px solid #E5E7EB;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Noto Sans JP', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .cta-share-btn:active, .cta-restart-btn:active {
+      background: #F3F4F6;
+      transform: scale(0.97);
+    }
+
+    /* コンフェッティ */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      pointer-events: none;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- スタート画面 -->
+  <div id="screen-start" class="screen active">
+    <div class="hero-emoji">🎯</div>
+    <h1 class="hero-title">適職診断</h1>
+    <p class="hero-subtitle">あなたにぴったりの仕事を見つけよう</p>
+    <button class="btn-primary" onclick="startDiagnosis()">診断をはじめる</button>
+  </div>
+
+  <!-- MBTI選択画面 -->
+  <div id="screen-mbti" class="screen">
+    <div class="container">
+      <div class="header">
+        <h2>あなたのMBTIタイプは？</h2>
+        <p>16タイプから選択してください</p>
+      </div>
+      
+      <div class="mbti-grid" id="mbti-grid"></div>
+      
+      <button class="btn-next" id="btn-mbti-next" onclick="goToQuestions()" disabled>次へ進む</button>
+    </div>
+  </div>
+
+  <!-- 質問画面 -->
+  <div id="screen-questions" class="screen">
+    <div class="container">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      </div>
+      
+      <div class="question-card">
+        <span class="question-number" id="question-number">Q1</span>
+        <p class="question-text" id="question-text"></p>
+      </div>
+      
+      <div class="options" id="options"></div>
+      
+      <button class="btn-back" id="btn-question-back" onclick="prevQuestion()" style="display: none;">← 前の質問に戻る</button>
+    </div>
+  </div>
+
+  <!-- ユーザー情報入力画面 -->
+  <div id="screen-userinfo" class="screen">
+    <div class="container">
+      <div class="header">
+        <h2>あと少しで結果がわかります！</h2>
+        <p>あなたの情報を教えてください</p>
+      </div>
+      
+      <div class="form-card">
+        <div class="form-group">
+          <label class="form-label">氏名<span class="required">*</span></label>
+          <input type="text" class="form-input" id="input-name" placeholder="山田 太郎" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">メールアドレス<span class="required">*</span></label>
+          <input type="email" class="form-input" id="input-email" placeholder="example@email.com" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">電話番号<span class="required">*</span></label>
+          <input type="tel" class="form-input" id="input-phone" placeholder="090-1234-5678" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">大学名</label>
+          <input type="text" class="form-input" id="input-university" placeholder="〇〇大学">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">卒業予定年<span class="required">*</span></label>
+          <select class="form-input" id="input-graduation" required>
+            <option value="">選択してください</option>
+            <option value="2025年3月">2025年3月</option>
+            <option value="2025年9月">2025年9月</option>
+            <option value="2026年3月">2026年3月</option>
+            <option value="2026年9月">2026年9月</option>
+            <option value="2027年3月">2027年3月</option>
+            <option value="2027年9月">2027年9月</option>
+            <option value="2028年3月">2028年3月</option>
+            <option value="2028年9月">2028年9月</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">希望勤務地</label>
+          <select class="form-input" id="input-location">
+            <option value="">選択してください</option>
+            <option value="北海道">北海道</option>
+            <option value="東北地方">東北地方</option>
+            <option value="関東地方">関東地方</option>
+            <option value="東京都">東京都</option>
+            <option value="神奈川県">神奈川県</option>
+            <option value="埼玉県">埼玉県</option>
+            <option value="千葉県">千葉県</option>
+            <option value="中部地方">中部地方</option>
+            <option value="愛知県">愛知県</option>
+            <option value="関西地方">関西地方</option>
+            <option value="大阪府">大阪府</option>
+            <option value="京都府">京都府</option>
+            <option value="兵庫県">兵庫県</option>
+            <option value="中国地方">中国地方</option>
+            <option value="四国地方">四国地方</option>
+            <option value="九州・沖縄地方">九州・沖縄地方</option>
+            <option value="福岡県">福岡県</option>
+            <option value="海外">海外</option>
+            <option value="こだわらない">こだわらない</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="input-consent" required>
+            <span>個人情報の取り扱いに同意します</span>
+          </label>
+        </div>
+      </div>
+      
+      <button class="btn-next" id="btn-userinfo-next" onclick="submitUserInfo()">診断結果を見る</button>
+    </div>
+  </div>
+
+  <!-- ローディング画面 -->
+  <div id="screen-loading" class="screen">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">診断中...</p>
+  </div>
+
+  <!-- 結果画面 -->
+  <div id="screen-result" class="screen">
+    <!-- ① ヒーローヘッダー（タイプカラーのグラデーション） -->
+    <div id="result-hero" class="result-hero">
+      <!-- 背景の装飾円 -->
+      <div class="hero-circle hero-circle-1"></div>
+      <div class="hero-circle hero-circle-2"></div>
+      
+      <!-- タイプアイコン（大） -->
+      <div id="result-icon" class="result-icon-wrap">
+        <span id="result-icon-emoji" class="result-icon-emoji">🎯</span>
+      </div>
+      
+      <!-- テキスト -->
+      <p class="result-label-top">診断結果</p>
+      <h1 id="result-type-name" class="result-type-name">戦略家タイプ</h1>
+      <p id="result-catch" class="result-catch">論理と戦略で未来を切り拓くリーダー</p>
+      
+      <!-- MBTIバッジ -->
+      <div id="result-mbti-badge" class="result-mbti-badge">
+        <span id="result-mbti-text">INTJ</span>
+      </div>
+    </div>
+
+    <!-- コンテンツエリア（白背景） -->
+    <div class="result-content">
+      <!-- ② 特性レーダーチャート -->
+      <div class="result-card">
+        <div class="result-card-header">
+          <span class="result-card-icon">✨</span>
+          <h3>あなたの特性プロフィール</h3>
+        </div>
+        <div class="radar-wrap">
+          <canvas id="radarChart"></canvas>
+        </div>
+      </div>
+
+      <!-- ③ 強みバッジ -->
+      <div class="result-card">
+        <div class="result-card-header">
+          <span class="result-card-icon">💪</span>
+          <h3>あなたの強み</h3>
+        </div>
+        <div id="strengths-container" class="strengths-container"></div>
+      </div>
+
+      <!-- ④ 向いている職種 -->
+      <div class="result-card">
+        <div class="result-card-header">
+          <span class="result-card-icon">💼</span>
+          <h3>向いている職種</h3>
+        </div>
+        <div id="jobs-container" class="jobs-container"></div>
+      </div>
+
+      <!-- ⑤ おすすめ企業カード -->
+      <div class="result-card">
+        <div class="result-card-header">
+          <span class="result-card-icon">🏢</span>
+          <h3>あなたにおすすめの企業</h3>
+        </div>
+        <div id="companies-container" class="companies-container"></div>
+      </div>
+
+      <!-- ⑥ CTAボタン群 -->
+      <div class="result-cta-area">
+        <!-- LINE相談ボタン（メインCTA） -->
+        <button onclick="goToLINE()" id="line-cta-btn" class="cta-line-btn">
+          <span class="line-icon">💬</span>
+          LINEでキャリア相談する
+        </button>
+        
+        <!-- サブCTA -->
+        <div class="sub-cta-row">
+          <button onclick="shareToX()" class="cta-share-btn">
+            <span>𝕏</span> シェア
+          </button>
+          <button onclick="restartDiagnosis()" class="cta-restart-btn">
+            🔄 もう一度
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =============================
+    // 設定
+    // =============================
+    const LIFF_ID = '2009349788-VSECkyT3';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyVo8GXnEO-xy6RWBDhrUl63oUNeIFhxf9rzumLDOEq7u36u0AAdyWg1ndyrgniVVVJcw/exec';
+
+    // LIFF初期化
+    let liffUser = null;
+    if (typeof liff !== 'undefined') {
+      liff.init({ liffId: LIFF_ID }).then(() => {
+        if (liff.isLoggedIn()) {
+          liff.getProfile().then(profile => {
+            liffUser = profile;
+          });
+        }
+      }).catch(err => {
+        console.log('LIFF init error:', err);
+      });
+    }
+
+    // =============================
+    // タイプ別設定（スタイルB）
+    // =============================
+    const typeConfig = {
+      strategist: {
+        color1: '#6366F1', color2: '#8B5CF6',
+        light: '#EEF2FF', textColor: '#4338CA',
+        icon: '🎯',
+        radarData: [90, 70, 95, 60, 80, 85],
+        strengths: ['戦略思考', 'リーダーシップ', '論理的分析', '長期ビジョン', '問題解決'],
+        label: '戦略家'
+      },
+      creator: {
+        color1: '#F43F5E', color2: '#EC4899',
+        light: '#FFF1F2', textColor: '#BE123C',
+        icon: '🎨',
+        radarData: [55, 95, 60, 70, 65, 80],
+        strengths: ['独創性', 'アイデア発想', '表現力', '審美眼', 'トレンド感覚'],
+        label: 'クリエイター'
+      },
+      supporter: {
+        color1: '#10B981', color2: '#14B8A6',
+        light: '#ECFDF5', textColor: '#065F46',
+        icon: '🤝',
+        radarData: [55, 65, 65, 95, 70, 75],
+        strengths: ['共感力', 'チームワーク', '傾聴力', '気配り', '信頼関係構築'],
+        label: 'サポーター'
+      },
+      engineer: {
+        color1: '#3B82F6', color2: '#06B6D4',
+        light: '#EFF6FF', textColor: '#1D4ED8',
+        icon: '⚙️',
+        radarData: [55, 70, 95, 60, 65, 95],
+        strengths: ['技術力', '論理思考', '精密さ', '問題解決', '専門知識'],
+        label: 'エンジニア'
+      },
+      sales: {
+        color1: '#F59E0B', color2: '#EF4444',
+        light: '#FFFBEB', textColor: '#B45309',
+        icon: '🚀',
+        radarData: [80, 70, 65, 90, 95, 70],
+        strengths: ['行動力', 'コミュ力', '交渉力', '目標達成力', '熱意'],
+        label: '営業'
+      },
+      analyst: {
+        color1: '#1E40AF', color2: '#3B82F6',
+        light: '#EFF6FF', textColor: '#1E3A8A',
+        icon: '📊',
+        radarData: [60, 55, 98, 65, 60, 90],
+        strengths: ['データ分析', '論理性', '正確性', '調査力', '客観思考'],
+        label: 'アナリスト'
+      },
+      manager: {
+        color1: '#7C3AED', color2: '#A855F7',
+        light: '#F5F3FF', textColor: '#6D28D9',
+        icon: '👑',
+        radarData: [95, 65, 80, 85, 85, 75],
+        strengths: ['組織管理', 'チームビルド', '目標設定', '決断力', '統率力'],
+        label: 'マネージャー'
+      },
+      specialist: {
+        color1: '#059669', color2: '#84CC16',
+        light: '#ECFDF5', textColor: '#065F46',
+        icon: '🏆',
+        radarData: [55, 85, 75, 65, 70, 95],
+        strengths: ['専門性', '探究心', '独自性', 'こだわり', '職人気質'],
+        label: 'スペシャリスト'
+      }
+    };
+
+    // =============================
+    // 結果データ
+    // =============================
+    function getResultData(type) {
+      const data = {
+        strategist: {
+          catch: '論理と戦略で未来を切り拓くリーダー',
+          jobs: ['経営コンサルタント', 'プロジェクトマネージャー', 'データサイエンティスト', '経営企画'],
+          companies: [
+            { emoji: '💼', name: 'サンプル商社株式会社', industry: 'コンサルティング', comment: 'あなたの戦略眼を活かせる環境' },
+            { emoji: '🌐', name: 'グローバルテック株式会社', industry: '外資系IT', comment: '世界を舞台に活躍できる職場' },
+            { emoji: '🚀', name: 'ベンチャーキャピタル社', industry: 'ベンチャー', comment: '高い成長性でスキルアップ' }
+          ]
+        },
+        creator: {
+          catch: '豊かな発想力で新しい価値を生み出すクリエイター',
+          jobs: ['Webデザイナー', 'マーケター', '商品企画', '広告クリエイティブ'],
+          companies: [
+            { emoji: '🎨', name: 'クリエイティブデザイン社', industry: 'デザイン・広告', comment: 'あなたの感性を最大限に活かせる' },
+            { emoji: '📱', name: 'デジタルメディア株式会社', industry: 'Webメディア', comment: 'トレンドを作る仕事ができる' },
+            { emoji: '✨', name: 'ブランドコンサル株式会社', industry: 'ブランディング', comment: 'クリエイティブで事業を動かす' }
+          ]
+        },
+        supporter: {
+          catch: '人の心に寄り添い、チームを支える縁の下の力持ち',
+          jobs: ['人事・採用', 'カスタマーサクセス', '医療・福祉', '教育'],
+          companies: [
+            { emoji: '🏥', name: 'メディカルサポート株式会社', industry: '医療・福祉', comment: 'あなたの共感力が誰かの支えになる' },
+            { emoji: '📚', name: 'エデュケーション社', industry: '教育', comment: '人の成長を一番近くで見届けられる' },
+            { emoji: '💚', name: 'ウェルネスケア株式会社', industry: 'HR・人事', comment: '働く人を支える仕事に携わろう' }
+          ]
+        },
+        engineer: {
+          catch: '緻密な分析力と技術力で課題を解決するプロフェッショナル',
+          jobs: ['エンジニア', '研究開発', '品質管理', 'システムアナリスト'],
+          companies: [
+            { emoji: '💻', name: 'テクノロジー株式会社', industry: 'IT・開発', comment: '最先端技術でプロダクトを作る' },
+            { emoji: '🔬', name: 'リサーチラボ社', industry: '研究開発', comment: '技術の可能性を追求できる環境' },
+            { emoji: '⚡', name: 'デジタルソリューション社', industry: 'SIer', comment: 'あなたの技術が社会インフラになる' }
+          ]
+        },
+        sales: {
+          catch: '行動力とコミュ力で結果を出す営業のプロ',
+          jobs: ['法人営業', 'ビジネスデベロップメント', 'PR・広報', 'リテール'],
+          companies: [
+            { emoji: '📈', name: 'セールスドライブ株式会社', industry: '営業・販売', comment: 'あなたの行動力がそのまま成果に' },
+            { emoji: '🤝', name: 'ビジネスパートナー社', industry: 'B2B営業', comment: 'トップセールスへの道が開けている' },
+            { emoji: '🌟', name: 'グロースマーケット社', industry: 'マーケティング', comment: '営業とマーケを融合した新しい仕事' }
+          ]
+        },
+        analyst: {
+          catch: 'データと数字で確実な答えを導く分析のプロ',
+          jobs: ['金融アナリスト', '会計士・税理士', '経理・財務', 'データアナリスト'],
+          companies: [
+            { emoji: '🏦', name: 'ファイナンシャル株式会社', industry: '金融・銀行', comment: '数字のプロとして活躍できる場所' },
+            { emoji: '📊', name: 'データインサイト社', industry: 'データ分析', comment: 'ビッグデータで事業を変える仕事' },
+            { emoji: '💰', name: 'コーポレート会計事務所', industry: '会計・監査', comment: '専門資格でキャリアを積み上げる' }
+          ]
+        },
+        manager: {
+          catch: 'チームをまとめ、目標達成に導く頼れるリーダー',
+          jobs: ['プロジェクトリーダー', '営業マネージャー', '人事・採用マネージャー', '事業責任者'],
+          companies: [
+            { emoji: '🏢', name: 'コーポレートリード株式会社', industry: '総合商社', comment: 'チームを率いてビジネスをリードする' },
+            { emoji: '👑', name: 'マネジメント株式会社', industry: 'コンサルティング', comment: '若手でも早期にマネジャーになれる' },
+            { emoji: '🎯', name: 'グロースカンパニー社', industry: 'ベンチャー', comment: '裁量を持ってチームを動かせる環境' }
+          ]
+        },
+        specialist: {
+          catch: '独自の感性と専門性を活かす一途なプロフェッショナル',
+          jobs: ['デザイナー', 'コピーライター', 'カウンセラー', '職人・技術職'],
+          companies: [
+            { emoji: '🎭', name: 'クラフトデザイン社', industry: 'クリエイティブ', comment: 'あなたのこだわりが作品になる職場' },
+            { emoji: '🌿', name: 'スペシャリスト事務所', industry: '専門職', comment: '深い専門性を磨き続けられる環境' },
+            { emoji: '🏺', name: 'アーツ＆クラフト株式会社', industry: 'ものづくり', comment: '職人としての誇りを持てる仕事' }
+          ]
+        }
+      };
+      return data[type] || data.strategist;
+    }
+
+    // =============================
+    // MBTIデータ
+    // =============================
+    const mbtiTypes = [
+      { code: 'INTJ', desc: '戦略家' },
+      { code: 'INTP', desc: '論理学者' },
+      { code: 'ENTJ', desc: '指揮官' },
+      { code: 'ENTP', desc: '討論者' },
+      { code: 'INFJ', desc: '提唱者' },
+      { code: 'INFP', desc: '仲介者' },
+      { code: 'ENFJ', desc: '主人公' },
+      { code: 'ENFP', desc: '運動家' },
+      { code: 'ISTJ', desc: '管理者' },
+      { code: 'ISFJ', desc: '擁護者' },
+      { code: 'ESTJ', desc: '幹部' },
+      { code: 'ESFJ', desc: '領事官' },
+      { code: 'ISTP', desc: '巨匠' },
+      { code: 'ISFP', desc: '冒険家' },
+      { code: 'ESTP', desc: '起業家' },
+      { code: 'ESFP', desc: 'エンターテイナー' }
+    ];
+
+    // =============================
+    // 質問データ
+    // =============================
+    const questions = [
+      {
+        text: 'チームでプロジェクトを進める時、あなたの役割は？',
+        options: [
+          { text: 'リーダーとして全体を統率する', type: 'leader' },
+          { text: 'アイデアを出して企画する', type: 'creator' },
+          { text: 'メンバーをサポートする', type: 'supporter' },
+          { text: '分析して最適解を見つける', type: 'analyst' }
+        ]
+      },
+      {
+        text: '仕事で最も大切にしたい価値観は？',
+        options: [
+          { text: '成果を出して認められること', type: 'leader' },
+          { text: '新しいことに挑戦できること', type: 'creator' },
+          { text: '誰かの役に立てること', type: 'supporter' },
+          { text: '専門性を高めること', type: 'analyst' }
+        ]
+      },
+      {
+        text: '困難な課題に直面した時、どう対応する？',
+        options: [
+          { text: '戦略を立てて計画的に解決', type: 'leader' },
+          { text: '柔軟に発想を変えて対応', type: 'creator' },
+          { text: 'チームで協力して乗り越える', type: 'supporter' },
+          { text: 'データを分析して原因究明', type: 'analyst' }
+        ]
+      },
+      {
+        text: '理想の働き方は？',
+        options: [
+          { text: '目標達成に向けて前進する', type: 'leader' },
+          { text: '自由に創造性を発揮する', type: 'creator' },
+          { text: '安定した環境で着実に働く', type: 'supporter' },
+          { text: '専門分野を深く探究する', type: 'analyst' }
+        ]
+      },
+      {
+        text: 'あなたの強みは？',
+        options: [
+          { text: 'リーダーシップと決断力', type: 'leader' },
+          { text: 'アイデア力と発想力', type: 'creator' },
+          { text: '協調性と共感力', type: 'supporter' },
+          { text: '論理的思考力と分析力', type: 'analyst' }
+        ]
+      },
+      {
+        text: '新しい環境での立ち回りは？',
+        options: [
+          { text: '積極的に行動して存在感を示す', type: 'leader' },
+          { text: '独自の視点でアプローチする', type: 'creator' },
+          { text: '周囲に馴染んで関係を築く', type: 'supporter' },
+          { text: '観察して最適な行動を取る', type: 'analyst' }
+        ]
+      },
+      {
+        text: '仕事のやりがいを感じる瞬間は？',
+        options: [
+          { text: '目標達成した時', type: 'leader' },
+          { text: '新しいものを生み出した時', type: 'creator' },
+          { text: '誰かに感謝された時', type: 'supporter' },
+          { text: '難問を解決した時', type: 'analyst' }
+        ]
+      },
+      {
+        text: 'ストレスを感じるのはどんな時？',
+        options: [
+          { text: '思い通りに進まない時', type: 'leader' },
+          { text: '創造性が制限される時', type: 'creator' },
+          { text: '人間関係が悪い時', type: 'supporter' },
+          { text: '論理的でない判断をされる時', type: 'analyst' }
+        ]
+      },
+      {
+        text: '10年後のあなたは？',
+        options: [
+          { text: 'チームを率いるリーダー', type: 'leader' },
+          { text: '業界で注目されるクリエイター', type: 'creator' },
+          { text: '信頼される専門家', type: 'supporter' },
+          { text: '第一線で活躍するスペシャリスト', type: 'analyst' }
+        ]
+      }
+    ];
+
+    // =============================
+    // 状態管理
+    // =============================
+    let selectedMBTI = null;
+    let currentQuestion = 0;
+    let answers = [];
+    let finalResult = null;
+    let radarChartInstance = null;
+    let userData = {};
+
+    // =============================
+    // 画面切り替え
+    // =============================
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    // =============================
+    // 診断開始
+    // =============================
+    function startDiagnosis() {
+      showScreen('screen-mbti');
+      renderMBTIGrid();
+    }
+
+    // =============================
+    // MBTIグリッド表示
+    // =============================
+    function renderMBTIGrid() {
+      const grid = document.getElementById('mbti-grid');
+      grid.innerHTML = '';
+      
+      mbtiTypes.forEach(type => {
+        const card = document.createElement('div');
+        card.className = 'mbti-card';
+        card.innerHTML = `
+          <div class="mbti-type">${type.code}</div>
+          <div class="mbti-desc">${type.desc}</div>
+        `;
+        card.onclick = () => selectMBTI(type.code, card);
+        grid.appendChild(card);
+      });
+    }
+
+    function selectMBTI(code, element) {
+      selectedMBTI = code;
+      document.querySelectorAll('.mbti-card').forEach(c => c.classList.remove('selected'));
+      element.classList.add('selected');
+      document.getElementById('btn-mbti-next').disabled = false;
+    }
+
+    // =============================
+    // 質問画面へ
+    // =============================
+    function goToQuestions() {
+      showScreen('screen-questions');
+      renderQuestion();
+    }
+
+    function renderQuestion() {
+      const q = questions[currentQuestion];
+      document.getElementById('question-number').textContent = `Q${currentQuestion + 1}`;
+      document.getElementById('question-text').textContent = q.text;
+      
+      const optionsEl = document.getElementById('options');
+      optionsEl.innerHTML = '';
+      
+      q.options.forEach((opt, idx) => {
+        const card = document.createElement('div');
+        card.className = 'option-card';
+        // 前に選択した答えがあれば選択状態を保持
+        if (answers[currentQuestion] === opt.type) {
+          card.classList.add('selected');
+        }
+        card.innerHTML = `
+          <div class="option-radio"></div>
+          <div class="option-text">${opt.text}</div>
+        `;
+        card.onclick = () => selectOption(idx, card, opt.type);
+        optionsEl.appendChild(card);
+      });
+      
+      updateProgress();
+      updateBackButton();
+    }
+
+    function selectOption(idx, element, type) {
+      answers[currentQuestion] = type;
+      document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+      element.classList.add('selected');
+      
+      // 0.5秒後に自動で次の質問へ
+      setTimeout(() => {
+        nextQuestion();
+      }, 500);
+    }
+
+    function updateProgress() {
+      const progress = ((currentQuestion + 1) / questions.length) * 100;
+      document.getElementById('progress-fill').style.width = progress + '%';
+    }
+
+    function updateBackButton() {
+      const backBtn = document.getElementById('btn-question-back');
+      if (currentQuestion > 0) {
+        backBtn.style.display = 'block';
+      } else {
+        backBtn.style.display = 'none';
+      }
+    }
+
+    function prevQuestion() {
+      if (currentQuestion > 0) {
+        currentQuestion--;
+        renderQuestion();
+      }
+    }
+
+    function nextQuestion() {
+      if (currentQuestion < questions.length - 1) {
+        currentQuestion++;
+        renderQuestion();
+      } else {
+        showScreen('screen-userinfo');
+        prefillUserInfo();
+      }
+    }
+
+    // =============================
+    // ユーザー情報入力
+    // =============================
+    function prefillUserInfo() {
+      if (liffUser) {
+        document.getElementById('input-name').value = liffUser.displayName || '';
+      }
+    }
+
+    async function submitUserInfo() {
+      const name = document.getElementById('input-name').value.trim();
+      const email = document.getElementById('input-email').value.trim();
+      const phone = document.getElementById('input-phone').value.trim();
+      const university = document.getElementById('input-university').value.trim();
+      const graduation = document.getElementById('input-graduation').value.trim();
+      const location = document.getElementById('input-location').value.trim();
+      const consent = document.getElementById('input-consent').checked;
+
+      if (!name || !email || !phone || !graduation || !consent) {
+        alert('必須項目を入力してください');
+        return;
+      }
+
+      userData = {
+        lineUserId: liffUser ? liffUser.userId : '',
+        lineDisplayName: liffUser ? liffUser.displayName : '',
+        name, email, phone, university, graduation, location,
+        mbtiType: selectedMBTI,
+        timestamp: new Date().toISOString()
+      };
+
+      // 診断結果計算
+      calculateResult();
+
+      // スプレッドシート保存
+      saveToSpreadsheet();
+
+      // ローディング表示
+      showScreen('screen-loading');
+
+      // 結果表示
+      setTimeout(() => {
+        showResult();
+        showScreen('screen-result');
+        startConfetti();
+      }, 2000);
+    }
+
+    // =============================
+    // 診断結果計算
+    // =============================
+    function calculateResult() {
+      const scores = {
+        leader: 0,
+        creator: 0,
+        supporter: 0,
+        analyst: 0
+      };
+
+      // MBTIベーススコア
+      const mbti = selectedMBTI || 'INTJ';
+      if (mbti.includes('E')) scores.leader += 10;
+      if (mbti.includes('N')) scores.creator += 10;
+      if (mbti.includes('F')) scores.supporter += 10;
+      if (mbti.includes('T')) scores.analyst += 10;
+      if (mbti.includes('J')) scores.leader += 5;
+      if (mbti.includes('P')) scores.creator += 5;
+
+      // 回答スコア
+      answers.forEach(type => {
+        scores[type] = (scores[type] || 0) + 10;
+      });
+
+      // タイプマッピング
+      const maxScore = Math.max(...Object.values(scores));
+      const maxType = Object.keys(scores).find(k => scores[k] === maxScore);
+
+      const typeMap = {
+        leader: scores.leader > 40 ? 'manager' : 'strategist',
+        creator: scores.creator > 40 ? 'creator' : 'specialist',
+        supporter: 'supporter',
+        analyst: scores.analyst > 50 ? 'analyst' : 'engineer'
+      };
+
+      // 営業タイプ判定
+      if (scores.leader > 35 && answers.filter(a => a === 'leader').length >= 4) {
+        finalResult = 'sales';
+      } else {
+        finalResult = typeMap[maxType] || 'strategist';
+      }
+    }
+
+    // =============================
+    // 結果表示（スタイルB）
+    // =============================
+    function showResult() {
+      const config = typeConfig[finalResult];
+      if (!config) return;
+      
+      // CSS変数でタイプカラーをセット
+      const root = document.documentElement;
+      root.style.setProperty('--type-color1', config.color1);
+      root.style.setProperty('--type-color2', config.color2);
+      root.style.setProperty('--type-light', config.light);
+      root.style.setProperty('--type-text', config.textColor);
+
+      // ① ヒーローグラデーション
+      document.getElementById('result-hero').style.background = 
+        `linear-gradient(135deg, ${config.color1}, ${config.color2})`;
+
+      // ② アイコン・タイプ名
+      document.getElementById('result-icon-emoji').textContent = config.icon;
+      document.getElementById('result-type-name').textContent = config.label + 'タイプ';
+      
+      // ③ キャッチコピー
+      const resultData = getResultData(finalResult);
+      document.getElementById('result-catch').textContent = resultData.catch;
+      
+      // ④ MBTIバッジ
+      document.getElementById('result-mbti-text').textContent = selectedMBTI || 'MBTI';
+
+      // ⑤ 強みバッジ生成
+      const strengthsEl = document.getElementById('strengths-container');
+      strengthsEl.innerHTML = '';
+      config.strengths.forEach((s, i) => {
+        const badge = document.createElement('span');
+        badge.className = 'strength-badge';
+        badge.style.animationDelay = `${i * 0.08}s`;
+        badge.textContent = '✦ ' + s;
+        strengthsEl.appendChild(badge);
+      });
+
+      // ⑥ 職種タグ生成
+      const jobsEl = document.getElementById('jobs-container');
+      jobsEl.innerHTML = '';
+      resultData.jobs.forEach(job => {
+        const tag = document.createElement('span');
+        tag.className = 'job-tag';
+        tag.textContent = job;
+        jobsEl.appendChild(tag);
+      });
+
+      // ⑦ 企業カード生成
+      const companiesEl = document.getElementById('companies-container');
+      companiesEl.innerHTML = '';
+      resultData.companies.forEach(company => {
+        const card = document.createElement('a');
+        card.className = 'company-card';
+        card.href = 'https://timerex.net/';
+        card.target = '_blank';
+        card.innerHTML = `
+          <div class="company-logo">${company.emoji}</div>
+          <div class="company-info">
+            <div class="company-name">${company.name}</div>
+            <span class="company-industry-tag">${company.industry}</span>
+            <div class="company-comment">${company.comment}</div>
+          </div>
+          <div class="company-arrow">›</div>
+        `;
+        companiesEl.appendChild(card);
+      });
+
+      // ⑧ レーダーチャート（Chart.js）
+      if (radarChartInstance) {
+        radarChartInstance.destroy();
+        radarChartInstance = null;
+      }
+      
+      const ctx = document.getElementById('radarChart').getContext('2d');
+      radarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['リーダーシップ', '創造性', '分析力', '協調性', '行動力', '専門性'],
+          datasets: [{
+            data: config.radarData,
+            backgroundColor: config.color1 + '30',
+            borderColor: config.color1,
+            borderWidth: 2.5,
+            pointBackgroundColor: config.color1,
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          animation: {
+            duration: 1000,
+            easing: 'easeOutQuart'
+          },
+          scales: {
+            r: {
+              min: 0, 
+              max: 100,
+              ticks: {
+                display: false,
+                stepSize: 25
+              },
+              grid: {
+                color: '#E5E7EB',
+                lineWidth: 1
+              },
+              angleLines: {
+                color: '#E5E7EB',
+                lineWidth: 1
+              },
+              pointLabels: {
+                font: { 
+                  size: 11, 
+                  family: "'Noto Sans JP', sans-serif", 
+                  weight: '600' 
+                },
+                color: '#4B5563'
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    // =============================
+    // スプレッドシート保存
+    // =============================
+    async function saveToSpreadsheet() {
+      const data = {
+        ...userData,
+        resultType: finalResult,
+        q1: answers[0] || '',
+        q2: answers[1] || '',
+        q3: answers[2] || '',
+        q4: answers[3] || '',
+        q5: answers[4] || '',
+        q6: answers[5] || '',
+        q7: answers[6] || '',
+        q8: answers[7] || '',
+        q9: answers[8] || ''
+      };
+
+      try {
+        await fetch(GAS_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } catch (err) {
+        console.error('保存エラー:', err);
+      }
+    }
+
+    // =============================
+    // アクション
+    // =============================
+    function goToLINE() {
+      if (typeof liff !== 'undefined' && liff.isInClient()) {
+        liff.closeWindow();
+      } else {
+        window.location.href = 'https://liff.line.me/2009349788-VSECkyT3';
+      }
+    }
+
+    function shareToX() {
+      const config = typeConfig[finalResult];
+      const text = `私は「${config.label}タイプ」でした！\nあなたの適職は？ #適職診断`;
+      const url = window.location.href;
+      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+    }
+
+    function restartDiagnosis() {
+      if (radarChartInstance) {
+        radarChartInstance.destroy();
+        radarChartInstance = null;
+      }
+      selectedMBTI = null;
+      currentQuestion = 0;
+      answers = [];
+      finalResult = null;
+      userData = {};
+      showScreen('screen-start');
+    }
+
+    // =============================
+    // コンフェッティ
+    // =============================
+    function startConfetti() {
+      const config = typeConfig[finalResult];
+      const colors = [config.color1, config.color2, '#FFFFFF', '#FFD700', config.light];
+      
+      for (let i = 0; i < 50; i++) {
+        setTimeout(() => createConfetti(colors), i * 30);
+      }
+    }
+
+    function createConfetti(colors) {
+      const confetti = document.createElement('div');
+      confetti.className = 'confetti';
+      confetti.style.left = Math.random() * 100 + '%';
+      confetti.style.top = '-10px';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animation = `fall ${2 + Math.random() * 2}s linear`;
+      
+      document.body.appendChild(confetti);
+      
+      setTimeout(() => confetti.remove(), 4000);
+    }
+
+    // CSSアニメーション追加
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes fall {
+        to {
+          transform: translateY(100vh) rotate(360deg);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>
